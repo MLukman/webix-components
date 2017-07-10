@@ -4,7 +4,7 @@
  * By Muhammad Lukman Nasaruddin (https://github.com/MLukman/webix-components) 
  *
  * Requires Webix >= 3.1.1 
- */  
+ */
 webix.protoUI({
 	name: "dndlist",
 	defaults: {
@@ -49,12 +49,13 @@ webix.protoUI({
 			onClick: {
 				'fa-plus-square': function (e, i) {
 					var row = this.getItem(i.row);
-					dnd.addValue(row.value);
+					dnd.addValue(row.value, row.display);
 				}
 			},
 			on: {
 				onItemDblClick: function (id) {
-					dnd.addValue(this.getItem(id).value);
+                  	var row = this.getItem(id);
+					dnd.addValue(row.value, row.display);
 				}
 			}
 		}, true);
@@ -91,34 +92,20 @@ webix.protoUI({
 			}
 		}, true);
 
-		var spacer = {view: 'resizer', borderless: true};
+		var spacer = {view: 'resizer', borderless: true,on: { 'onViewResize': function() { alert('s'); this.adjust(); }}};
 		var cols = {cols: (this.config.swap ? [valueDt, spacer, choicesDt] : [choicesDt, spacer, valueDt])};
 		var top = (this.config.labelPosition == 'top');
 		var label = (this.config.label != "" ?
-				//{id: 'label', view: 'label', label: config.label, width: config.labelWidth, align: config.labelAlign} :
-				{
-					id: 'label',
-					view: 'template',
-					type: 'clean',
-					width: this.config.labelWidth,
-					css: { 'text-align' : this.config.labelAlign },
-					template: '<label style="display: inline-block; float: ' + this.config.labelAlign 
-					+ '" class="webix_inp_' + (top ? "top_":"") + 'label '
-					+ (this.config.required ? "webix_required":"")
-					+ '">' + this.config.label + '</label>'
-				}:
+				{id: 'label', view: 'label', label: this.config.label, width: this.config.labelWidth, align: this.config.labelAlign} :
 				{width: 1, height: 1});
 		if (top) {
-			config.rows = [
+			this.config.rows = [
 				label,
 				cols
 			];
 		} else {
-			//label.css = { 'padding-right': '7.5px' };
 			this.config.cols = [
-				{
-					rows: [label]
-				},
+				{ rows: [label] },
 				cols
 			];
 		}
@@ -126,9 +113,6 @@ webix.protoUI({
 		this.$ready.push(function () {
 			this.setValue(this.config.value);
 			this.setChoices(this.config.choices);
-			$$(this.$view).$$('label').getNode().children[0].style.padding = 0;
-			//webix.html.addCss($$(this.$view).$$('label').getNode(), 'webix_inp_label');
-			//webix.html.removeCss($$(this.$view).$$('label').getNode(), 'webix_el_label');
 		});
 	},
 	setChoices: function (choices) {
@@ -153,13 +137,25 @@ webix.protoUI({
 	},
 	setValue: function (values) {
 		var existVal = this.getValue();
-		for (var i = 0; i < existVal.length; i++) {
-			if (values.indexOf(existVal[i]) === -1) {
-				this.removeValue(existVal[i]);
+		if (Array.isArray(values)) {
+			for (var i = 0; i < existVal.length; i++) {
+				if (values.indexOf(existVal[i]) === -1) {
+					this.removeValue(existVal[i]);
+				}
+			}
+			for (var j = 0; j < values.length; j++) {
+				this.addValue(values[j], values[j]);
 			}
 		}
-		for (var j = 0; j < values.length; j++) {
-			this.addValue(values[j]);
+		else {
+			for (var i = 0; i < existVal.length; i++) {
+				if (!values.hasOwnProperty(existVal[i])) {
+					this.removeValue(existVal[i]);
+				}
+			}
+			for (var val in values) {
+				this.addValue(val, values[val]);
+			}
 		}
 	},
 	getValue: function () {
@@ -170,7 +166,7 @@ webix.protoUI({
 		}, true);
 		return value;
 	},
-	addValue: function (value) {
+	addValue: function (value, display) {
 		var valueDt = this.$$('value');
 		var choicesDt = this.$$('choices');
 		var choices = this.config.choices;
@@ -178,7 +174,10 @@ webix.protoUI({
 			return row.value === value;
 		});
 		if (valueDt.find(rowFinder, true) == false) {
-			if (Array.isArray(choices)) {
+			if (display !== undefined) {
+				valueDt.add({value: value, display: display});
+			}
+			else if (Array.isArray(choices)) {
 				valueDt.add({value: value, display: value});
 			}
 			else {
@@ -205,8 +204,8 @@ webix.protoUI({
 			if (Array.isArray(choices)) {
 				choicesDt.add({value: val, display: val});
 				}
-			else if (choices.hasOwnProperty(val)) {
-				choicesDt.add({value: val, display: choices[val]});
+			else {
+				choicesDt.add({value: value[0].value, display: value[0].display});
 			}
 		}
 	}
