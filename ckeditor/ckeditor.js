@@ -2,6 +2,7 @@ webix.protoUI({
 	name:"ckeditor",
 	$init:function(config){
 		this.$view.className += " webix_selectable";
+		this._waitEditor = webix.promise.defer();
 	},
 	defaults:{
 		borderless:true,
@@ -23,7 +24,9 @@ webix.protoUI({
 				width:this.$width -2,
 				height:this.$height - 44
 			});
+			this._waitEditor.resolve(this._3rd_editor);
 		}, this);
+		this._init_ckeditor_once = function(){};
 	},
 	_set_inner_size:function(x, y){
 		if (!this._3rd_editor || !this._3rd_editor.container || !this.$width) return;
@@ -51,7 +54,7 @@ webix.protoUI({
 		if (this._3rd_editor)
 			this._3rd_editor.focus();
 	},
-	getEditor:function(){
-		return this._3rd_editor.getData();
+	getEditor:function(waitEditor){
+		return waitEditor?this._waitEditor:this._3rd_editor;
 	}
 }, webix.ui.view);
